@@ -7,7 +7,6 @@ from paimf import FundScoringPipeline
 
 pipeline = FundScoringPipeline(
     analysis,
-    scheme_codes={"Fund A": "122639", "Fund B": "118989"},
     profile="consistent_compounder",
 )
 
@@ -16,7 +15,9 @@ latest = pipeline.latest()       # latest valid row per fund/benchmark pair
 print(latest[["fund", "benchmark", "quality_score", "overall_score"]])
 ```
 
-`analysis` is a `FundAnalysis` instance. The optional `scheme_codes` mapping attaches source identifiers to labels used in that analysis. `pipeline.features` contains the feature table after `run()`; `pipeline.scores` contains the monthly score table.
+`analysis` is a `FundAnalysis` instance. The optional `scheme_codes` mapping attaches source identifiers to labels used in that analysis. If the analysis fund keys are numeric scheme codes, you can omit this mapping. The pipeline looks up the real AMFI scheme name and replaces labels such as `Fund A` in output; it also includes a `scheme_code` column. If the AMFI lookup fails, a warning suggests checking VPN/network access to amfiindia.com and the output uses the scheme code as its fund label. Scoring still works on supplied histories. `pipeline.features` contains the feature table after `run()`; `pipeline.scores` contains the monthly score table.
+
+By default, `drop_nulls=True` removes columns that are entirely null and then rows with any remaining null value from both result tables. This omits warm-up observations and may leave no rows for a short history. Set `drop_nulls=False` to keep the full tables, including missing values.
 
 ## Profiles
 

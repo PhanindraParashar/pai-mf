@@ -57,23 +57,78 @@ def test_profiles_are_defensive_copies_and_weights_are_validated() -> None:
 
 
 def test_pipeline_produces_finite_latest_scores_and_scheme_metadata() -> None:
+    class NameProvider:
+        def get_bulk_quotes(self, codes, *, show_progress):
+            assert show_progress is False
+            return {code: {"scheme_name": f"AMFI {code}"} for code in codes}
+
     pipeline = FundScoringPipeline(
         _analysis(),
         profile="consistent_compounder",
         scheme_codes={"Better Fund": "123456", "Weaker Fund": "654321"},
+        amfi_provider=NameProvider(),
     )
 
     scores = pipeline.run()
     latest = pipeline.latest()
 
     assert len(latest) == 2
-    assert set(latest["fund"]) == {"Better Fund", "Weaker Fund"}
+    assert set(latest["fund"]) == {"AMFI 123456", "AMFI 654321"}
     assert set(latest["scheme_code"]) == {"123456", "654321"}
     assert set(latest["scoring_profile"]) == {"consistent_compounder"}
     assert latest[["quality_score", "trend_score", "overall_score"]].notna().all().all()
     assert latest[["quality_score", "trend_score", "overall_score"]].ge(0).all().all()
     assert latest[["quality_score", "trend_score", "overall_score"]].le(1).all().all()
     assert scores["fund_age_years"].ge(0).all()
+    assert not scores.isna().any().any()
+
+
+def test_amfi_name_lookup_warns_and_falls_back_to_scheme_code() -> None:
+    class FailingProvider:
+        def get_bulk_quotes(self, codes, *, show_progress):
+            raise ConnectionError("unavailable")
+
+    pipeline = FundScoringPipeline(
+        _analysis(),
+        scheme_codes={"Better Fund": "123456", "Weaker Fund": "654321"},
+        amfi_provider=FailingProvider(),
+    )
+    with pytest.warns(RuntimeWarning, match="VPN/network access"):
+        scores = pipeline.run()
+    assert set(scores["fund"]) == {"123456", "654321"}
+    assert set(scores["scheme_code"]) == {"123456", "654321"}
+
+
+def test_numeric_fund_keys_supply_scheme_codes_automatically() -> None:
+    class NameProvider:
+        def get_bulk_quotes(self, codes, *, show_progress):
+            assert set(codes) == {"123456", "654321"}
+            return {code: {"scheme_name": f"AMFI {code}"} for code in codes}
+
+    base = _analysis()
+    analysis = FundAnalysis(
+        funds={"123456": base.funds["Better Fund"], "654321": base.funds["Weaker Fund"]},
+        benchmarks=base.benchmarks,
+        config=base.config,
+    )
+    pipeline = FundScoringPipeline(analysis, amfi_provider=NameProvider())
+    scores = pipeline.run()
+
+    assert set(scores["fund"]) == {"AMFI 123456", "AMFI 654321"}
+    assert set(scores["scheme_code"]) == {"123456", "654321"}
+
+
+def test_pipeline_can_preserve_null_rows_when_requested() -> None:
+    clean = FundScoringPipeline(_analysis())
+    raw = FundScoringPipeline(_analysis(), drop_nulls=False)
+
+    clean_scores = clean.run()
+    raw_scores = raw.run()
+
+    assert len(clean_scores) < len(raw_scores)
+    assert not clean_scores.isna().any().any()
+    assert raw_scores.isna().any().any()
+    assert not clean.features.isna().any().any()
 
 
 def test_short_history_penalty_fades_as_fund_ages() -> None:

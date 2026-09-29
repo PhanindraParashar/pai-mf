@@ -137,10 +137,12 @@ FundScoringPipeline(
     scheme_codes=None,
     profile="consistent_compounder",
     fund_categories=None,
+    drop_nulls=True,
+    amfi_provider=None,
 )
 ```
 
-`run(category_col=None)` computes `features` and monthly `scores` and returns the full scores DataFrame. Map fund labels to categories with `fund_categories`, then use `run(category_col="category")` for category-specific cross-sectional ranks. The scores preserve actual observation `date` and include a `score_month` period. `latest()` runs the pipeline if needed and returns the latest valid quality-score row per fund/benchmark. `viz` and `visualizer` lazily create a `FundVisualizer`.
+`run(category_col=None)` computes `features` and monthly `scores` and returns the cleaned scores DataFrame. Numeric fund keys or `scheme_codes` trigger AMFI name lookup; `amfi_provider` can supply an existing provider. On lookup failure, a warning suggests checking VPN/network access and fund labels fall back to scheme codes. Map fund labels to categories with `fund_categories`, then use `run(category_col="category")` for category-specific cross-sectional ranks. With `drop_nulls=True`, all-null columns and rows containing any null are removed from the returned tables; set it to `False` for complete history. The scores preserve actual observation `date` and include a `score_month` period. `latest()` runs the pipeline if needed and returns the latest valid quality-score row per fund/benchmark. `viz` and `visualizer` lazily create a `FundVisualizer`.
 
 For more control, use `FundFeatureCalculator().build(analysis)` to get the feature table, then `FundScorer(config).score(features, category_col=None)`. `FundScorer.latest(scores)` selects the latest valid quality row. `ScoreNormalizer.historical(...)` and `ScoreNormalizer.cross_sectional(...)` are available for advanced custom scoring workflows. `SCORING_PROFILES` and `get_scoring_profile(name)` expose the named defaults.
 

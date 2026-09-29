@@ -24,8 +24,7 @@ uv sync --extra data            # add both data providers
 uv sync --extra data --extra plot  # add data and Plotly charts
 ```
 
-The package is set up for a later PyPI release. These commands install from the repository; they do not publish it.
-After a release, the equivalent package install will be `python -m pip install "pai-mf[data,plot]"`.
+To install the published package, use `python -m pip install "pai-mf[data,plot]"`.
 
 ## Five-minute example
 
@@ -39,7 +38,7 @@ funds = data.get_mutual_funds(["122639", "118989"], errors="raise")
 indices = data.get_indices(["NIFTY50"], years=10)
 
 analysis = FundAnalysis(
-    funds={"Fund A": funds["122639"], "Fund B": funds["118989"]},
+    funds=funds,
     benchmarks=indices,
     config=AnalysisConfig(
         lookback_years=3,
@@ -52,15 +51,12 @@ analysis = FundAnalysis(
 print(analysis.asset_metrics.tail())
 print(analysis.relative_metrics.tail())
 
-pipeline = FundScoringPipeline(
-    analysis,
-    scheme_codes={"Fund A": "122639", "Fund B": "118989"},
-)
+pipeline = FundScoringPipeline(analysis)
 pipeline.run()
 print(pipeline.latest())
 ```
 
-The scheme codes are examples. Verify the code and share class against the current AMFI source before interpreting the output. Provider histories and your own inputs use the same two-column contract: `date` and `price`.
+The scheme codes are examples. The pipeline looks up fund names from AMFI and includes `scheme_code` in the result. If AMFI is unreachable, it warns that VPN/network access may be needed and uses the scheme code as the fund label. Verify the code and share class against the current AMFI source before interpreting the output. Provider histories and your own inputs use the same two-column contract: `date` and `price`.
 
 ## Use your own price data
 

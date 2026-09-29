@@ -25,12 +25,13 @@ To run the README's live-data example, save it as a script and use `uv run --ext
 uv run pytest
 uv run ruff check .
 uv run ruff format --check src tests
-uv build
+uv build --no-sources
+uvx twine check dist/*
 ```
 
-`uv build` creates a wheel and source distribution in `dist/`. It does not publish them. Test the built wheel in a fresh environment and check that importing `paimf` succeeds with only core dependencies. Also check that a missing optional integration yields an actionable install message when its provider is first used.
+`uv build --no-sources` creates a wheel and source distribution in `dist/` using only published build dependencies. `twine check` validates their package metadata and rendered README. Neither command publishes them. Test the built wheel in a fresh environment and check that importing `paimf` succeeds with only core dependencies. Also check that a missing optional integration yields an actionable install message when its provider is first used.
 
-Before publishing later, choose a license and add its file and package metadata. Recheck that the `pai-mf` name is available on PyPI at release time; availability can change. Review the package version, README, source distributions, and dependency bounds against the release you intend to ship.
+The project is open source under MIT; its `LICENSE` file and package metadata carry that choice. Before publishing later, recheck that the `pai-mf` name is available on PyPI; availability can change. Review the package version, README, source distributions, and dependency bounds against the release you intend to ship. Configure a PyPI account and publishing credentials or a Trusted Publisher only when you are ready to release.
 
 ## Package boundaries
 

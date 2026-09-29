@@ -2,6 +2,8 @@
 
 `pai-mf` is a Python library for collecting mutual fund NAV and market price histories, calculating rolling performance, comparing funds with benchmarks, and scoring those comparisons. The import name is `paimf`.
 
+The project is open source under the [MIT license](https://github.com/PhanindraParashar/pai-mf/blob/main/LICENSE).
+
 Data access and analysis are separate. You can fetch with the included providers, then save or pass the resulting DataFrames to analysis; you can also analyze your own price data without installing either data provider.
 
 ## Install
@@ -23,6 +25,7 @@ uv sync --extra data --extra plot  # add data and Plotly charts
 ```
 
 The package is set up for a later PyPI release. These commands install from the repository; they do not publish it.
+After a release, the equivalent package install will be `python -m pip install "pai-mf[data,plot]"`.
 
 ## Five-minute example
 
@@ -98,12 +101,12 @@ Available analysis results include annualized return, volatility, downside devia
 
 ## Documentation
 
-- [Collect and normalize data](docs/data.md)
-- [Analyze returns and benchmarks](docs/analysis.md)
-- [Score funds and customize profiles](docs/scoring.md)
-- [API guide](docs/api.md)
-- [Performance and larger universes](docs/performance.md)
-- [Development and validation](docs/development.md)
+- [Collect and normalize data](https://github.com/PhanindraParashar/pai-mf/blob/main/docs/data.md)
+- [Analyze returns and benchmarks](https://github.com/PhanindraParashar/pai-mf/blob/main/docs/analysis.md)
+- [Score funds and customize profiles](https://github.com/PhanindraParashar/pai-mf/blob/main/docs/scoring.md)
+- [API guide](https://github.com/PhanindraParashar/pai-mf/blob/main/docs/api.md)
+- [Performance and larger universes](https://github.com/PhanindraParashar/pai-mf/blob/main/docs/performance.md)
+- [Development and validation](https://github.com/PhanindraParashar/pai-mf/blob/main/docs/development.md)
 
 ## Scope and data notes
 

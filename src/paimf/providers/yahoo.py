@@ -9,7 +9,7 @@ from typing import Any, Iterable
 
 import pandas as pd
 
-from ._common import normalize_price_frame, retry, worker_count
+from ._common import normalize_price_frame, resolve_date_range, retry, worker_count
 
 
 class YahooFinanceProvider:
@@ -21,10 +21,16 @@ class YahooFinanceProvider:
 
     INDEX_TICKERS = {
         "NIFTY50": "^NSEI",
+        # Kept for compatibility: NIFTY150 means Nifty Midcap 150 here.
         "NIFTY150": "NIFTYMIDCAP150.NS",
         "NIFTY500": "^CRSLDX",
         "S&P500": "^GSPC",
         "NASDAQ100": "^NDX",
+        "DOWJONES": "^DJI",
+        "FTSE100": "^FTSE",
+        "DAX": "^GDAXI",
+        "NIKKEI225": "^N225",
+        "HANGSENG": "^HSI",
     }
     INDEX_ALIASES = {
         "NIFTY50": "NIFTY50",
@@ -34,6 +40,13 @@ class YahooFinanceProvider:
         "SP500": "S&P500",
         "S&P500": "S&P500",
         "NASDAQ100": "NASDAQ100",
+        "DOWJONES": "DOWJONES",
+        "DOWJONESINDUSTRIALAVERAGE": "DOWJONES",
+        "DJIA": "DOWJONES",
+        "FTSE100": "FTSE100",
+        "DAX": "DAX",
+        "NIKKEI225": "NIKKEI225",
+        "HANGSENG": "HANGSENG",
     }
     DEFAULT_BENCHMARKS = ("NIFTY50", "NIFTY150", "NIFTY500")
 
@@ -75,17 +88,7 @@ class YahooFinanceProvider:
         start: str | date | datetime | pd.Timestamp | None,
         end: str | date | datetime | pd.Timestamp | None,
     ) -> tuple[pd.Timestamp, pd.Timestamp]:
-        if not isinstance(years, int) or years < 1:
-            raise ValueError("years must be a positive integer")
-        last = (
-            pd.Timestamp(end)
-            if end is not None
-            else pd.Timestamp.today().normalize() + pd.Timedelta(days=1)
-        )
-        first = pd.Timestamp(start) if start is not None else last - pd.DateOffset(years=years)
-        if pd.isna(first) or pd.isna(last) or first >= last:
-            raise ValueError("start must be before end")
-        return first, last
+        return resolve_date_range(years, start, end)
 
     @staticmethod
     def _normalize_download(frame: pd.DataFrame) -> pd.DataFrame:

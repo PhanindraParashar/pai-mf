@@ -191,3 +191,94 @@ def test_single_identifier_and_invalid_prices_are_handled() -> None:
     )
     clean = data.normalize_price_frame(frame, "date", "nav")
     assert clean["price"].tolist() == [100]
+
+
+def test_unified_history_routes_both_sources_and_keeps_metadata() -> None:
+    amfi = FakeMftool()
+    yahoo = FakeYahoo(yahoo_frame())
+    data = MarketData(mf=amfi, yahoo=yahoo)
+
+    fund = data.get_history(123, start="2024-01-01", end="2024-01-02")
+    assert fund.columns.tolist() == ["date", "price"]
+    assert fund["price"].tolist() == [99]
+    assert fund.attrs == {"source": "amfi", "identifier": "123", "symbol": None}
+    assert amfi.history_calls == ["123"]
+
+    index = data.get_history("index:S&P 500")
+    assert index["price"].tolist() == [99, 101]
+    assert index.attrs == {"source": "yahoo", "identifier": "S&P500", "symbol": "^GSPC"}
+    assert yahoo.calls[0][0] == "^GSPC"
+
+    stock = data.get_history("yahoo:AAPL")
+    assert stock.attrs == {"source": "yahoo", "identifier": "AAPL", "symbol": "AAPL"}
+    assert yahoo.calls[-1][0] == "AAPL"
+    assert data.get_history("123", source="yahoo").attrs["source"] == "yahoo"
+    assert yahoo.calls[-1][0] == "123"
+
+
+def test_unified_batch_labels_deduplication_and_failure_policy(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr("paimf.providers._common.time.sleep", lambda _: None)
+    amfi = FakeMftool()
+    yahoo = FakeYahoo(yahoo_frame())
+    data = MarketData(mf=amfi, yahoo=yahoo, max_workers=3)
+
+    histories, failures = data.get_histories(
+        {"Fund": "amfi:123", "Index": "NIFTY50", "Same index": "NIFTY 50", "Missing": 404},
+        errors="skip",
+        return_failures=True,
+    )
+    assert list(histories) == ["Fund", "Index", "Same index"]
+    assert list(failures) == ["Missing"]
+    assert "unavailable" in failures["Missing"]
+    assert len(yahoo.calls) == 1
+    assert yahoo.calls[0][0] == "^NSEI"
+    assert histories["Index"].attrs["symbol"] == "^NSEI"
+    histories["Index"].loc[0, "price"] = -1
+    assert histories["Same index"].loc[0, "price"] == 99
+
+    assert list(data.get_histories([123, "123", "NIFTY50"])) == ["123", "NIFTY50"]
+    assert data.get_histories([]) == {}
+    with pytest.raises(RuntimeError, match="unavailable"):
+        data.get_histories([404])
+
+
+def test_unified_history_validates_requests_before_fetching() -> None:
+    data = MarketData(mf=FakeMftool(), yahoo=FakeYahoo(yahoo_frame()))
+    with pytest.raises(ValueError, match="source must be"):
+        data.get_history("AAPL", source="other")
+    with pytest.raises(ValueError, match="conflicts"):
+        data.get_history("amfi:123", source="yahoo")
+    with pytest.raises(ValueError, match="Unknown source prefix"):
+        data.get_history("other:AAPL")
+    with pytest.raises(ValueError, match="Unknown index alias"):
+        data.get_history("index:unknown")
+    with pytest.raises(ValueError, match="numeric scheme codes"):
+        data.get_history("amfi:abc")
+    with pytest.raises(ValueError, match="only interval"):
+        data.get_history(123, interval="1wk")
+    with pytest.raises(ValueError, match="before end"):
+        data.get_history(123, start="2024-02-01", end="2024-01-01")
+    with pytest.raises(RuntimeError, match="requested period"):
+        data.get_history(123, start="2025-01-01", end="2025-02-01")
+    with pytest.raises(ValueError, match="Duplicate history label"):
+        data.get_histories({123: 123, "123": 123})
+
+
+def test_common_index_aliases_resolve_to_expected_yahoo_symbols() -> None:
+    provider = YahooFinanceProvider(client=FakeYahoo(yahoo_frame()))
+    expected = {
+        "NIFTY 50": ("NIFTY50", "^NSEI"),
+        "Nifty Midcap 150": ("NIFTY150", "NIFTYMIDCAP150.NS"),
+        "NIFTY500": ("NIFTY500", "^CRSLDX"),
+        "S&P 500": ("S&P500", "^GSPC"),
+        "NASDAQ-100": ("NASDAQ100", "^NDX"),
+        "Dow Jones": ("DOWJONES", "^DJI"),
+        "FTSE 100": ("FTSE100", "^FTSE"),
+        "DAX": ("DAX", "^GDAXI"),
+        "Nikkei 225": ("NIKKEI225", "^N225"),
+        "Hang Seng": ("HANGSENG", "^HSI"),
+    }
+    for alias, resolved in expected.items():
+        assert provider._canonical_index(alias) == resolved

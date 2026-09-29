@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77.0.3"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,6 +7,8 @@ name = "pai-mf"
 version = "0.1.0"
 description = "Mutual fund and index data, rolling analysis, and fund scoring"
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.10"
 authors = [{name = "Phanindra Parashar"}]
 keywords = ["mutual funds", "AMFI", "financial analysis", "yfinance"]
@@ -33,6 +35,8 @@ plot = ["plotly>=5.18"]
 all = ["yfinance>=0.2", "mftool>=3.3", "plotly>=5.18"]
 
 [project.urls]
+Documentation = "https://github.com/PhanindraParashar/pai-mf/tree/main/docs"
+Issues = "https://github.com/PhanindraParashar/pai-mf/issues"
 Repository = "https://github.com/PhanindraParashar/pai-mf"
 
 [dependency-groups]

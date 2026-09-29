@@ -6,10 +6,10 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-from .analysis import FundAnalysis
+from ..analysis import FundAnalysis
 
 if TYPE_CHECKING:
-    from .pipeline import FundScoringPipeline
+    from ..pipeline import FundScoringPipeline
 
 
 METRIC_INFO: dict[str, tuple[str, str]] = {

@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 
 from .config import AnalysisConfig
-from .metrics import RollingMetrics
+from ..metrics import RollingMetrics
 
 
 @dataclass

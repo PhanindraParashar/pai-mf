@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-from .analysis import FundAnalysis
+from ..analysis import FundAnalysis
 
 
 class FundFeatureCalculator:

@@ -4,12 +4,32 @@ from __future__ import annotations
 
 import time
 from collections.abc import Callable, Iterable
+from datetime import date, datetime
 from typing import TypeVar
 
 import numpy as np
 import pandas as pd
 
 T = TypeVar("T")
+
+
+def resolve_date_range(
+    years: int,
+    start: str | date | datetime | pd.Timestamp | None,
+    end: str | date | datetime | pd.Timestamp | None,
+) -> tuple[pd.Timestamp, pd.Timestamp]:
+    """Use an exclusive end date for both data sources."""
+    if not isinstance(years, int) or years < 1:
+        raise ValueError("years must be a positive integer")
+    last = (
+        pd.Timestamp(end)
+        if end is not None
+        else pd.Timestamp.today().normalize() + pd.Timedelta(days=1)
+    )
+    first = pd.Timestamp(start) if start is not None else last - pd.DateOffset(years=years)
+    if pd.isna(first) or pd.isna(last) or first >= last:
+        raise ValueError("start must be before end")
+    return first, last
 
 
 def normalize_price_frame(

@@ -6,8 +6,8 @@ from typing import Mapping
 import pandas as pd
 
 from ..analysis import FundAnalysis
-from .config import ScoringConfig
 from ..features import FundFeatureCalculator
+from .config import ScoringConfig
 from .scorer import FundScorer
 
 

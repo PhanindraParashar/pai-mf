@@ -6,8 +6,8 @@ from typing import Mapping
 import numpy as np
 import pandas as pd
 
-from .config import AnalysisConfig
 from ..metrics import RollingMetrics
+from .config import AnalysisConfig
 
 
 @dataclass
